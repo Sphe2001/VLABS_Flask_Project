@@ -1,0 +1,402 @@
+<!-- base.html -->
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <title>{% block title %}View Labs{% endblock %}</title>
+    <link
+      rel="stylesheet"
+      href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css"
+    />
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/all.min.css"
+    />
+    <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.9.2/dist/umd/popper.min.js"></script>
+    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
+    <style>
+      body {
+        display: flex;
+        flex-direction: column;
+        min-height: 100vh;
+      }
+      .footer {
+        margin-top: auto;
+        background-color: #f8f9fa;
+        padding: 10px 0;
+      }
+      .scroll-to-top {
+        position: fixed;
+        bottom: 20px;
+        right: 20px;
+        display: none;
+      }
+      .modal-dialog {
+        max-width: 500px;
+      }
+
+      .modal-content {
+        border-radius: 10px;
+        box-shadow: 0px 0px 20px rgba(0, 0, 0, 0.2);
+      }
+
+      .modal-header {
+        background-color: #343a40; /* Updated color to match the navbar */
+        color: #ffffff;
+        border-bottom: none;
+        border-top-left-radius: 10px;
+        border-top-right-radius: 10px;
+      }
+
+      .modal-title {
+        font-weight: bold;
+      }
+
+      .modal-body {
+        padding: 20px;
+      }
+
+      .modal-footer {
+        border-top: none;
+        border-bottom-left-radius: 10px;
+        border-bottom-right-radius: 10px;
+      }
+
+      .close {
+        color: #ffffff;
+        opacity: 1;
+      }
+    </style>
+  </head>
+  <body>
+    <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
+      <a class="navbar-brand" href="#">View Labs</a>
+      <button
+        class="navbar-toggler"
+        type="button"
+        data-toggle="collapse"
+        data-target="#navbarNav"
+        aria-controls="navbarNav"
+        aria-expanded="false"
+        aria-label="Toggle navigation"
+      >
+        <span class="navbar-toggler-icon"></span>
+      </button>
+      <div class="collapse navbar-collapse" id="navbarNav">
+        <ul class="navbar-nav mr-auto">
+          <li class="nav-item">
+            <a class="nav-link" href="{{ url_for('index') }}"
+              ><i class="fas fa-home"></i> Home</a
+            >
+          </li>
+          {% if current_user.is_authenticated %} {% if current_user.role ==
+          'lecturer' %}
+          <a class="nav-link" href="{{ url_for('lecturer_dashboard') }}"
+            ><i class="fas fa-tachometer-alt"></i> Dashboard</a
+          >
+          {% elif current_user.role == 'admin' %}
+          <a class="nav-link" href="{{ url_for('admin_panel') }}">
+            <i class="fas fa-tachometer-alt"></i> Dashboard
+          </a>
+          {% else %}
+          <a class="nav-link" href="{{ url_for('student_dashboard') }}"
+            ><i class="fas fa-tachometer-alt"></i> Dashboard</a
+          >
+          {% endif %} {% if current_user.role ==
+            'admin' %}
+          <li class="nav-item">
+            <a
+              class="nav-link"
+              href="#"
+              data-toggle="modal"
+              data-target="#announcementModal"
+            >
+              <i class="fas fa-bullhorn"></i> Announcements
+            </a>
+          </li>
+          {% elif current_user.role == 'student' %}
+          <li class="nav-item">
+            <a
+              class="nav-link"
+              href="{{ url_for('view_announcements') }}"
+              
+            >
+              <i class="fas fa-bullhorn"></i> Announcements
+            </a>
+          </li>
+          {% endif %}
+          <li class="nav-item">
+            <a class="nav-link" href="{{ url_for('logout') }}"
+              ><i class="fas fa-sign-out-alt"></i> Logout</a
+            >
+          </li>
+          <!-- Profile Icon -->
+          <div>
+            <li class="nav-item">
+              <a class="nav-link" href="#profileModal" data-toggle="modal">
+                {% if current_user.profile_picture %}
+                <img
+                  src="{{ url_for('static', filename='profile_pictures/' + current_user.profile_picture) }}"
+                  alt="Profile Picture"
+                  style="width: 30px; height: 30px; border-radius: 50%"
+                />
+                {% endif %}
+                <span class="ml-2">{{ current_user.username }}</span>
+              </a>
+            </li>
+          </div>
+          
+          
+          {% else %}
+          <li class="nav-item">
+            <a class="nav-link" href="{{ url_for('login') }}"
+              ><i class="fas fa-sign-in-alt"></i> Login</a
+            >
+          </li>
+          {% endif %}
+        </ul>
+        <!-- Search Bar for Logged In Students -->
+        {% if current_user.is_authenticated and current_user.role == 'student'
+        %}
+        <form
+          class="form-inline ml-auto"
+          action="{{ url_for('student_dashboard') }}"
+          method="GET"
+        >
+          <input
+            class="form-control mr-sm-2"
+            type="search"
+            placeholder="Search for labs..."
+            aria-label="Search"
+            name="q"
+          />
+          <button class="btn btn-outline-light my-2 my-sm-0" type="submit">
+            Search
+          </button>
+        </form>
+        {% endif %}
+      </div>
+    </nav>
+    <div class="container mt-4">
+      {% with messages = get_flashed_messages(with_categories=true) %} {% if
+      messages %} {% for category, message in messages %}
+      <div
+        class="alert alert-{{ category }} alert-dismissible fade show"
+        role="alert"
+      >
+        {{ message }}
+        <button
+          type="button"
+          class="close"
+          data-dismiss="alert"
+          aria-label="Close"
+        >
+          <span aria-hidden="true">&times;</span>
+        </button>
+      </div>
+      {% endfor %} {% endif %} {% endwith %} {% block content %}{% endblock %}
+    </div>
+    <div
+      class="modal fade"
+      id="profileModal"
+      tabindex="-1"
+      role="dialog"
+      aria-labelledby="profileModalLabel"
+      aria-hidden="true"
+    >
+      <div class="modal-dialog" role="document">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title" id="profileModalLabel">Profile</h5>
+            <button
+              type="button"
+              class="close"
+              data-dismiss="modal"
+              aria-label="Close"
+            >
+              <span aria-hidden="true">&times;</span>
+            </button>
+          </div>
+          <div class="modal-body">
+            <h5>Username: {{ current_user.username }}</h5>
+            <p>Email: {{ current_user.email }}</p>
+            <h5>Role: {{ current_user.role }}</h5>
+            <!-- Update Profile Button -->
+            <button
+              class="btn btn-primary"
+              data-toggle="modal"
+              data-target="#updateProfileModal"
+            >
+              Update Profile
+            </button>
+            {% if current_user.role == 'student' %}
+            <div>
+              <form action="{{ url_for('write_complaint') }}" method="get">
+                <button type="submit" class="btn btn-primary mt-3">
+                  Write a Complaint
+                </button>
+              </form>
+            </div>
+            {% endif %}
+            {% if current_user.is_authenticated %}
+              <form action="{{ url_for('delete_user', user_id=current_user.id) }}" method="post" onsubmit="return confirm('Are you sure you want to delete your account? This action cannot be undone.');">
+                  <button type="submit" class="btn btn-danger mt-3">
+                      Delete Account
+                  </button>
+              </form>
+          {% endif %}
+          </div>
+        </div>
+      </div>
+    </div>
+        <!-- Announcements Modal -->
+        <div
+          class="modal fade"
+          id="announcementModal"
+          tabindex="-1"
+          role="dialog"
+          aria-labelledby="announcementModalLabel"
+          aria-hidden="true"
+            >
+          <div class="modal-dialog" role="document">
+            <div class="modal-content">
+              <div class="modal-header">
+                <h5 class="modal-title" id="announcementModalLabel">
+                  Announcements
+                </h5>
+                <button
+                  type="button"
+                  class="close"
+                  data-dismiss="modal"
+                  aria-label="Close"
+                >
+                  <span aria-hidden="true">&times;</span>
+                </button>
+              </div>
+              <div class="modal-body">
+                <div id="announcements-container">
+                  <!-- Announcements will be loaded here dynamically -->
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+            <!-- Update Profile Modal -->
+        <div
+            class="modal fade"
+            id="updateProfileModal"
+            tabindex="-1"
+            role="dialog"
+            aria-labelledby="updateProfileModalLabel"
+            aria-hidden="true"
+          >
+            <div class="modal-dialog" role="document">
+              <div class="modal-content">
+                <div class="modal-header">
+                  <h5 class="modal-title" id="updateProfileModalLabel">
+                    Update Profile
+                  </h5>
+                  <button
+                    type="button"
+                    class="close"
+                    data-dismiss="modal"
+                    aria-label="Close"
+                  >
+                    <span aria-hidden="true">&times;</span>
+                  </button>
+                </div>
+                <form
+                    action="{{ url_for('update_profile') }}"
+                    method="POST"
+                    enctype="multipart/form-data"
+                  >
+                  <div class="modal-body">
+                    <div class="form-group">
+                      <label for="username">Username</label>
+                      <input
+                        type="text"
+                        class="form-control"
+                        id="username"
+                        name="username"
+                        value="{{ current_user.username }}"
+                        required
+                      />
+                    </div>
+                    <div class="form-group">
+                      <label for="email">Email</label>
+                      <input
+                        type="email"
+                        class="form-control"
+                        id="email"
+                        name="email"
+                        value="{{ current_user.email }}"
+                        required
+                      />
+                    </div>
+                    <div class="form-group">
+                      <label for="profile_picture">Profile Picture</label>
+                      <input
+                        type="file"
+                        class="form-control-file"
+                        id="profile_picture"
+                        name="profile_picture"
+                      />
+                    </div>
+                  </div>
+                  <div class="modal-footer">
+                    <button
+                      type="button"
+                      class="btn btn-secondary"
+                      data-dismiss="modal"
+                    >
+                      Close
+                    </button>
+                    <button type="submit" class="btn btn-primary">
+                      Save changes
+                    </button>
+                  </div>
+                </form>
+          </div>
+        </div>
+      </div>
+
+    </div>
+    <footer class="footer text-center">
+      <div class="container">
+        <span class="text-muted"
+          >&copy; 2024 My Flask App. All rights reserved.</span
+        >
+      </div>
+    </footer>
+    <button class="btn btn-primary scroll-to-top" onclick="scrollToTop()">
+      <i class="fas fa-arrow-up"></i>
+    </button>
+    <script>
+      // Scroll to Top Functionality
+      function scrollToTop() {
+        window.scrollTo({ top: 0, behavior: "smooth" });
+      }
+
+      // Show/Hide Scroll to Top Button
+      window.addEventListener("scroll", function () {
+        const scrollToTopButton = document.querySelector(".scroll-to-top");
+        if (window.pageYOffset > 100) {
+          scrollToTopButton.style.display = "block";
+        } else {
+          scrollToTopButton.style.display = "none";
+        }
+      });
+
+      // Highlight Active Navbar Link
+      $(document).ready(function () {
+        $("a.nav-link").each(function () {
+          if (this.href === window.location.href) {
+            $(this).addClass("active");
+          }
+        });
+      });
+    </script>
+  </body>
+</html>
